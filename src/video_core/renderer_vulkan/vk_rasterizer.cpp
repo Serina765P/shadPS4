@@ -660,7 +660,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                     vk_buffer->GetBarrier(access_mask, vk::PipelineStageFlagBits2::eAllCommands)) {
                 buffer_barriers.emplace_back(*barrier);
             }
-            if (desc.is_written && desc.is_formatted) {
+            if (desc.is_written) {
                 texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
             }
         }
