@@ -692,7 +692,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     for (u32 i = 0; i < num; i++) {
         std::unique_lock lock{ports[i]->mutex};
         ports[i]->output_cv.wait(lock,
-                                 [&] { return !ports[i]->output_ready || ports[i]->closing; });
+                                [&] { return !ports[i]->output_ready || ports[i]->closing; });
 
         if (ports[i]->closing) {
             LOG_DEBUG(Lib_AudioOut, "Port closed while waiting for drain");
