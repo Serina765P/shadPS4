@@ -31,3 +31,12 @@ void Layer::RemoveLayer(Layer* layer) {
 std::size_t ActiveErrorDialogLayers() {
     return std::ranges::count_if(layers, [](auto* layer) { return layer != nullptr; });
 }
+
+void DrawErrorDialogLayers() {
+    const auto active_layers = layers;
+    for (auto* layer : active_layers) {
+        if (layer) {
+            layer->Draw();
+        }
+    }
+}

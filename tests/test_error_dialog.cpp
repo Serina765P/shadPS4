@@ -8,6 +8,7 @@
 #include "core/libraries/np/np_error.h"
 
 std::size_t ActiveErrorDialogLayers();
+void DrawErrorDialogLayers();
 
 using namespace Libraries::ErrorDialog;
 using Libraries::CommonDialog::Error;
@@ -42,6 +43,10 @@ protected:
 TEST_F(ErrorDialogTest, OfflineSignedOutIsAutomaticallyAcknowledged) {
     const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
     ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
     EXPECT_EQ(sceErrorDialogGetStatus(), Status::FINISHED);
     EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::FINISHED);
     EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
@@ -52,9 +57,64 @@ TEST_F(ErrorDialogTest, RepeatedOfflineNotificationsCompleteWithoutAUserClick) {
     const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
     for (int occurrence = 0; occurrence < 3; ++occurrence) {
         ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+        ASSERT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+        DrawErrorDialogLayers();
         EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::FINISHED);
         EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
     }
+}
+
+TEST_F(ErrorDialogTest, GuestWaitingForRunningCanProceed) {
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    // A rendering frame may happen before the game's first status query.
+    DrawErrorDialogLayers();
+    ASSERT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::FINISHED);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
+}
+
+TEST_F(ErrorDialogTest, UpdateStatusOnlyCallerSeesRunningBeforeCompletion) {
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    DrawErrorDialogLayers();
+    ASSERT_EQ(sceErrorDialogUpdateStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::FINISHED);
+}
+
+TEST_F(ErrorDialogTest, PollingWithoutAFrameKeepsTheDialogRunning) {
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    for (int poll = 0; poll < 5; ++poll) {
+        EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+        EXPECT_EQ(sceErrorDialogUpdateStatus(), Status::RUNNING);
+    }
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::FINISHED);
+}
+
+TEST_F(ErrorDialogTest, CloseBeforeAutomaticConfirmationStillSucceeds) {
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    ASSERT_EQ(sceErrorDialogClose(), Error::OK);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::FINISHED);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
+}
+
+TEST_F(ErrorDialogTest, TerminationCancelsPendingAutomaticConfirmation) {
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    ASSERT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    ASSERT_EQ(sceErrorDialogTerminate(), Error::OK);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::NONE);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
+    ASSERT_EQ(sceErrorDialogInitialize(), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::INITIALIZED);
 }
 
 TEST_F(ErrorDialogTest, ConnectedNetworkKeepsTheSignOutDialogVisible) {

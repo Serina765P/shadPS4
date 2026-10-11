@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include <utility>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
@@ -24,16 +25,19 @@ using CommonDialog::Error;
 using CommonDialog::Result;
 using CommonDialog::Status;
 
+static std::atomic_bool g_auto_acknowledge{false};
+static std::atomic_bool g_running_status_observed{false};
+
 class ErrorDialogUi final : public ImGui::Layer {
     bool first_render{false};
 
-    Status* status{nullptr};
+    std::atomic<Status>* status{nullptr};
     std::string err_message{};
 
 public:
-    explicit ErrorDialogUi(Status* status = nullptr, std::string err_message = "")
+    explicit ErrorDialogUi(std::atomic<Status>* status = nullptr, std::string err_message = "")
         : status(status), err_message(std::move(err_message)) {
-        if (status && *status == Status::RUNNING) {
+        if (status && status->load() == Status::RUNNING) {
             first_render = true;
             AddLayer(this);
         }
@@ -50,7 +54,7 @@ public:
         using std::swap;
         swap(status, other.status);
         swap(err_message, other.err_message);
-        if (status && *status == Status::RUNNING) {
+        if (status && status->load() == Status::RUNNING) {
             first_render = true;
             AddLayer(this);
         }
@@ -59,7 +63,7 @@ public:
 
     void Finish() {
         if (status) {
-            *status = Status::FINISHED;
+            status->store(Status::FINISHED);
         }
         status = nullptr;
         RemoveLayer(this);
@@ -67,7 +71,18 @@ public:
 
     void Draw() override {
         using namespace ImGui;
-        if (status == nullptr || *status != Status::RUNNING) {
+        if (status == nullptr || status->load() != Status::RUNNING) {
+            return;
+        }
+        if (g_auto_acknowledge.load()) {
+            // Keep RUNNING observable even if rendering beats the game's first status query.
+            // Complete on the UI thread through the same path as the OK button.
+            if (g_running_status_observed.load()) {
+                Finish();
+                LOG_INFO(Lib_ErrorDialog,
+                         "Automatically acknowledged offline PSN sign-out dialog 0x80550006 "
+                         "after RUNNING was observed");
+            }
             return;
         }
         const auto& io = GetIO();
@@ -113,12 +128,22 @@ public:
     }
 };
 
-static auto g_status = Status::NONE;
+static std::atomic<Status> g_status{Status::NONE};
 static ErrorDialogUi g_dialog_ui;
+
+static Status GetDialogStatus() {
+    const auto status = g_status.load();
+    if (status == Status::RUNNING && g_auto_acknowledge.load() &&
+        !g_running_status_observed.exchange(true)) {
+        LOG_INFO(Lib_ErrorDialog, "Offline PSN sign-out dialog RUNNING observed by guest");
+    }
+    // Return the snapshot so a concurrent UI acknowledgement cannot hide RUNNING from this query.
+    return status;
+}
 
 Error PS4_SYSV_ABI sceErrorDialogClose() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status != Status::RUNNING) {
+    if (g_status.load() != Status::RUNNING) {
         return Error::NOT_RUNNING;
     }
     g_dialog_ui.Finish();
@@ -126,21 +151,25 @@ Error PS4_SYSV_ABI sceErrorDialogClose() {
 }
 
 Status PS4_SYSV_ABI sceErrorDialogGetStatus() {
-    LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    const auto status = GetDialogStatus();
+    LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(status));
+    return status;
 }
 
 Error PS4_SYSV_ABI sceErrorDialogInitialize() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status != Status::NONE) {
+    if (g_status.load() != Status::NONE) {
         return Error::ALREADY_INITIALIZED;
     }
-    g_status = Status::INITIALIZED;
+    g_auto_acknowledge.store(false);
+    g_running_status_observed.store(false);
+    g_status.store(Status::INITIALIZED);
     return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
-    if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
+    const auto status = g_status.load();
+    if (status != Status::INITIALIZED && status != Status::FINISHED) {
         LOG_INFO(Lib_ErrorDialog, "called without initialize");
         return Error::INVALID_STATE;
     }
@@ -152,17 +181,18 @@ Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
     LOG_INFO(Lib_ErrorDialog, "called param->errorCode = {:#x}", err);
     ASSERT(param->size == sizeof(Param));
 
-    if (err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
-        !EmulatorSettings.IsConnectedToNetwork() && !EmulatorSettings.IsShadNetEnabledSetting()) {
-        g_dialog_ui.Finish();
-        g_status = Status::FINISHED;
-        LOG_INFO(Lib_ErrorDialog, "Automatically acknowledged offline PSN sign-out dialog {:#x}",
+    const bool auto_acknowledge = err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
+                                  !EmulatorSettings.IsConnectedToNetwork() &&
+                                  !EmulatorSettings.IsShadNetEnabledSetting();
+    g_running_status_observed.store(false);
+    g_auto_acknowledge.store(auto_acknowledge);
+    if (auto_acknowledge) {
+        LOG_INFO(Lib_ErrorDialog, "Queued offline PSN sign-out dialog {:#x} for UI acknowledgement",
                  err);
-        return Error::OK;
     }
 
     const std::string err_message = fmt::format("An error has occurred. \nCode: {:#X}", err);
-    g_status = Status::RUNNING;
+    g_status.store(Status::RUNNING);
     g_dialog_ui = ErrorDialogUi{&g_status, err_message};
     return Error::OK;
 }
@@ -179,19 +209,22 @@ int PS4_SYSV_ABI sceErrorDialogOpenWithReport() {
 
 Error PS4_SYSV_ABI sceErrorDialogTerminate() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status == Status::RUNNING) {
+    if (g_status.load() == Status::RUNNING) {
         sceErrorDialogClose();
     }
-    if (g_status == Status::NONE) {
+    if (g_status.load() == Status::NONE) {
         return Error::NOT_INITIALIZED;
     }
-    g_status = Status::NONE;
+    g_auto_acknowledge.store(false);
+    g_running_status_observed.store(false);
+    g_status.store(Status::NONE);
     return Error::OK;
 }
 
 Status PS4_SYSV_ABI sceErrorDialogUpdateStatus() {
-    LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    const auto status = GetDialogStatus();
+    LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(status));
+    return status;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
