@@ -23,10 +23,13 @@ Stage (CUSA07753/CUSA09153).
 | [#4859](https://github.com/shadps4-emu/shadPS4/pull/4859) | Wake audio waiters when their port closes | Keep independent per-port locking, SDL pacing and worker priorities. |
 | [#5001](https://github.com/shadps4-emu/shadPS4/pull/5001) + [#5196](https://github.com/shadps4-emu/shadPS4/pull/5196) | Correct mip layout, small-mip detiling, thick array padding and tile-mode mapping | Carry per-mip micro-tiling flags through the release uniform buffer and adapt the GLSL preprocessor path. |
 | [#5062](https://github.com/shadps4-emu/shadPS4/pull/5062), cache-key portion | Separate tiling pipelines by sample count and exact bit depth | Retain runtime GLSL compilation and use the upstream TilingKey; avoid 64/96-bit collisions. |
+| [#5231](https://github.com/shadps4-emu/shadPS4/pull/5231) | Cover every submit wait semaphore and presentation texture reads | Keep the release submit mutex and use the corrected wait-stage array and fragment-read barrier. |
 
 The sparse-arena/batched-upload renderer refactors are deliberately outside
 this release backport. Their interfaces and subsequent regression fixes must
 be migrated together if a future branch adopts that architecture.
+The image write-barrier checks restored by upstream #5193 already exist in
+this release, so they are not duplicated here.
 
 ## Cloud builds
 
