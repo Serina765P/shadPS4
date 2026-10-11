@@ -430,3 +430,8 @@ result
 AGENTS.md
 CLAUDE.md
 *.memory.md
+
+# Release artifacts directory
+release_artifacts/
+dist/
+
