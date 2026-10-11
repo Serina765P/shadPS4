@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 
-baseline = "240400c4069e3ff8dfece6cd6c18cd514e44e7ad"
+baseline = "40977ae6c7a6f7a2b9349f270ace731b365f50af"
 source = Path("src/core/libraries/ime/error_dialog.cpp")
 original = source.read_text()
 start_marker = "Error PS4_SYSV_ABI sceErrorDialogOpen("
@@ -26,14 +26,14 @@ try:
     source.write_text(original[:start] + old_open + original[end:])
     subprocess.run(build, check=True)
     result = subprocess.run([
-        binary, "--gtest_filter=ErrorDialogTest.OfflineSignedOutIsAutomaticallyAcknowledged",
+        binary, "--gtest_filter=ErrorDialogTest.GuestWaitingForRunningCanProceed",
         f"--gtest_output=json:{report}",
     ])
     failures = json.loads(report.read_text())["testsuites"][0]["testsuite"][0].get("failures", [])
     messages = "\n".join(failure["failure"] for failure in failures)
-    if result.returncode != 1 or "sceErrorDialogGetStatus()" not in messages or "Status::FINISHED" not in messages:
-        raise RuntimeError("Baseline did not reproduce the manual-confirmation dialog state.")
-    print("Baseline reproduced the offline sign-out dialog waiting for confirmation.", flush=True)
+    if result.returncode != 1 or "sceErrorDialogGetStatus()" not in messages or "Status::RUNNING" not in messages:
+        raise RuntimeError("Baseline did not reproduce the skipped RUNNING state.")
+    print("Baseline reproduced FINISHED before the guest can observe RUNNING.", flush=True)
 finally:
     source.write_text(original)
 

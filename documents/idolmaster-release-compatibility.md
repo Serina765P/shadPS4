@@ -54,15 +54,23 @@ SPIR-V generation; it does not verify rendered pixels or hardware timing.
 
 The core automatically acknowledges error dialog `0x80550006`
 (`ORBIS_NP_ERROR_SIGNED_OUT`) when both network connectivity and ShadNet are
-disabled. It finishes the dialog as clicking OK would, while logging the code
-at Info level. NP authentication results remain unchanged. Other error codes,
+disabled. Opening still enters RUNNING. After a status query has returned
+RUNNING to the guest, the UI frame finishes through the same path as the OK
+button, without drawing the offline notification. This preserves the observable
+dialog lifecycle, including when rendering precedes the first status query.
+Immediate completion inside the open call was removed after a reported game
+stall. The code and acknowledgement stages are retained in Info-level logs.
+NP authentication results remain unchanged. Other error codes,
 including saved-data errors, and sign-out dialogs with networking or ShadNet
 enabled continue to require confirmation.
 
 CI exercises the real error-dialog APIs with a headless layer registry. It
-first reproduces the waiting dialog using the preceding release implementation,
-then verifies automatic completion, repeated notifications, preserved online
-dialogs, unrelated errors and parameter validation with the updated code.
+first reproduces the skipped RUNNING state using the preceding immediate-completion
+implementation, then verifies the status-query/UI-frame handoff, repeated
+notifications, close/termination before confirmation, preserved online dialogs,
+unrelated errors and parameter validation with the updated code. These tests
+check the real API and UI acknowledgement path; actual game progression still
+requires gameplay validation.
 
 Keep readback mode at **Precise**, matching the original fork recommendation.
 Actual compatibility remains unverified until both games are played with
