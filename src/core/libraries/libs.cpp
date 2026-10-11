@@ -50,6 +50,7 @@
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_tus.h"
+#include "core/libraries/np/np_utility/np_utility.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
@@ -136,6 +137,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceNpParty.sprx", Libraries::Np::NpParty::RegisterLib},
             {"libSceNpPartner001.sprx", Libraries::Np::NpPartner::RegisterLib},
             {"libSceNpTus.sprx", Libraries::Np::NpTus::RegisterLib},
+            {"libSceNpUtility.sprx", Libraries::Np::NpUtility::RegisterLib},
             {"libSceScreenShot.sprx", Libraries::ScreenShot::RegisterLib},
             {"libSceAppContent.sprx", Libraries::AppContent::RegisterLib},
             {"libScePngDec.sprx", Libraries::PngDec::RegisterLib},

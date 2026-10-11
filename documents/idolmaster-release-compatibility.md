@@ -24,6 +24,7 @@ Stage (CUSA07753/CUSA09153).
 | [#5001](https://github.com/shadps4-emu/shadPS4/pull/5001) + [#5196](https://github.com/shadps4-emu/shadPS4/pull/5196) | Correct mip layout, small-mip detiling, thick array padding and tile-mode mapping | Carry per-mip micro-tiling flags through the release uniform buffer and adapt the GLSL preprocessor path. |
 | [#5062](https://github.com/shadps4-emu/shadPS4/pull/5062), cache-key portion | Separate tiling pipelines by sample count and exact bit depth | Retain runtime GLSL compilation and use the upstream TilingKey; avoid 64/96-bit collisions. |
 | [#5231](https://github.com/shadps4-emu/shadPS4/pull/5231) | Cover every submit wait semaphore and presentation texture reads | Keep the release submit mutex and use the corrected wait-stage array and fragment-read barrier. |
+| [NpUtility at 443f022](https://github.com/shadps4-emu/shadPS4/blob/443f022450f6857256e780daa3d5a14029a748f7/src/core/libraries/np/np_utility/np_utility.cpp), WordFilter subset | Return valid context/request handles instead of the generic zero stub | Adapt the NpHandler include path; retain this release's user identities and authentication state. |
 
 The sparse-arena/batched-upload renderer refactors are deliberately outside
 this release backport. Their interfaces and subsequent regression fixes must
@@ -71,6 +72,16 @@ notifications, close/termination before confirmation, preserved online dialogs,
 unrelated errors and parameter validation with the updated code. These tests
 check the real API and UI acknowledgement path; actual game progression still
 requires gameplay validation.
+
+The WordFilter subset of NpUtility is also registered. Stella Stage startup
+called the missing `sceNpWordFilterCreateTitleCtxA` NID and displayed error
+`0x0` after the generic fallback returned zero. Context creation now returns a
+valid positive handle, with the upstream request, completion, cancellation and
+deletion lifecycle. CI replays the actual generic fallback to reproduce zero,
+then verifies the real APIs and startup NID registration. Zero-code dialogs are
+not dismissed by the offline policy. As in the upstream implementation, comment
+processing currently passes text through; an online censorship service is not
+implemented by this backport.
 
 Keep readback mode at **Precise**, matching the original fork recommendation.
 Actual compatibility remains unverified until both games are played with
