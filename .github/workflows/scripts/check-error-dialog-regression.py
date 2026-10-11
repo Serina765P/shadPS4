@@ -13,7 +13,7 @@ start_marker = "Error PS4_SYSV_ABI sceErrorDialogOpen("
 end_marker = "\nint PS4_SYSV_ABI sceErrorDialogOpenDetail("
 build = ["cmake", "--build", "build-tests", "--parallel", "4",
          "--target", "shadps4_error_dialog_test"]
-binary = str(Path("build-tests/shadps4_error_dialog_test").resolve())
+binary = str(Path("build-tests/tests/shadps4_error_dialog_test").resolve())
 report = Path("build-tests/error-dialog-baseline.json").resolve()
 
 subprocess.run(["git", "fetch", "--no-tags", "--depth=1", "origin", baseline], check=True)
