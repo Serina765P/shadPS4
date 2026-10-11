@@ -12,6 +12,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_trophy.h"
+#include "core/libraries/np/trophy_data_state.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
 #include "core/memory.h"
@@ -114,7 +115,7 @@ static void ApplyUnlockToXmlFile(const std::filesystem::path& xml_path, OrbisNpT
 }
 
 static constexpr auto MaxTrophyHandles = 4u;
-static constexpr auto MaxTrophyContexts = 8u;
+static constexpr auto MaxTrophyContexts = TrophyDataState::MaxContexts;
 
 using ContextKey = std::pair<u32, u32>; // <user_id, service label>
 struct ContextKeyHash {
@@ -213,6 +214,7 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     }
 
     const auto ctx_id = trophy_contexts.insert(user_id, service_label);
+    trophy_data_state.Clear(ctx_id.index);
 
     *context = ctx_id.index + 1;
 
@@ -262,6 +264,7 @@ int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context) {
 
     ContextKey contextkey = trophy_contexts[contextId];
     trophy_contexts.erase(contextId);
+    trophy_data_state.Clear(contextId.index);
     contexts_internal.erase(contextkey);
 
     return ORBIS_OK;
@@ -850,6 +853,8 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
         return ORBIS_NP_UTIL_ERROR_INVALID_TITLEID;
     }
 
+    trophy_data_state.Register(contextId.index, static_cast<s32>(ctx.user_id),
+                               std::filesystem::exists(ctx.trophy_xml_path));
     ctx.registered = true;
     LOG_INFO(Lib_NpTrophy, "Context {} registered", context);
 

@@ -65,6 +65,16 @@ NP authentication results remain unchanged. Other error codes,
 including saved-data errors, and sign-out dialogs with networking or ShadNet
 enabled continue to require confirmation.
 
+For play without trophy data, `0x80551604` (trophy INVALID_ARGUMENT) is also
+acknowledged when trophy registration has confirmed that every registered
+context for the dialog's user lacks its trophy definition XML. Unregistered,
+destroyed, other-user and mixed available/unavailable contexts retain normal
+dialogs. An unspecified-user dialog requires all registered contexts to lack
+definitions. Existing definition files, even if subsequently invalid, prevent
+this fallback from hiding parameter errors. This only acknowledges the UI
+notification; trophy API results, unlock flags and records are unchanged. Adding
+valid trophy data and restarting restores normal error-dialog behavior.
+
 CI exercises the real error-dialog APIs with a headless layer registry. It
 first reproduces the skipped RUNNING state using the preceding immediate-completion
 implementation, then verifies the status-query/UI-frame handoff, repeated
@@ -82,6 +92,11 @@ then verifies the real APIs and startup NID registration. Zero-code dialogs are
 not dismissed by the offline policy. As in the upstream implementation, comment
 processing currently passes text through; an online censorship service is not
 implemented by this backport.
+
+The trophy policy has its own baseline regression: the previous dialog-open
+function leaves the missing-data notification waiting for OK, while the updated
+code completes after RUNNING and a UI frame. CPU checks also render normal
+dialogs in an ImGui context to verify that preserved errors remain RUNNING.
 
 Keep readback mode at **Precise**, matching the original fork recommendation.
 Actual compatibility remains unverified until both games are played with

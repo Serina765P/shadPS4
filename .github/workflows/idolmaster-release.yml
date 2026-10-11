@@ -96,6 +96,10 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 .github/workflows/scripts/check-word-filter-regression.py
 
+      - name: Verify unavailable trophy dialog regression
+        if: runner.os == 'Linux'
+        run: python3 .github/workflows/scripts/check-trophy-dialog-regression.py
+
       - name: Build and run CPU tests
         if: runner.os == 'Linux'
         run: |
