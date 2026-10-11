@@ -153,7 +153,7 @@ Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
     ASSERT(param->size == sizeof(Param));
 
     if (err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
-        !EmulatorSettings.IsConnectedToNetwork() && !EmulatorSettings.IsShadNetEnabled()) {
+        !EmulatorSettings.IsConnectedToNetwork() && !EmulatorSettings.IsShadNetEnabledSetting()) {
         g_dialog_ui.Finish();
         g_status = Status::FINISHED;
         LOG_INFO(Lib_ErrorDialog, "Automatically acknowledged offline PSN sign-out dialog {:#x}",
