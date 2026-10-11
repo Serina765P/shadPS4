@@ -60,7 +60,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.21
         with:
           key: idolmaster-${{ matrix.platform }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', '.gitmodules') }}
-          append-timestamp: false
+          append-timestamp: true
 
       - name: Check tiling shader variants
         if: runner.os == 'Linux'
