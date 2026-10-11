@@ -82,6 +82,15 @@ TEST_F(ErrorDialogTest, OtherOfflineErrorsStillRequireConfirmation) {
     EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
 }
 
+TEST_F(ErrorDialogTest, DisabledShadNetSessionKeepsConfiguredAccountDialogVisible) {
+    EmulatorSettings.SetShadNetEnabled(true);
+    EmulatorSettings.SetShadNetSessionDisabled(true);
+    const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
 TEST_F(ErrorDialogTest, SavedDataCorruptionErrorsAreNotDismissed) {
     const auto param = MakeParam(0x809F000Fu);
     ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
