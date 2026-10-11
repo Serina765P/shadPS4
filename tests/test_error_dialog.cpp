@@ -22,6 +22,7 @@ protected:
             logging_ready = true;
         }
         sceErrorDialogTerminate();
+        EmulatorSettings.SetConfigMode(ConfigMode::Global);
         EmulatorSettings.SetConnectedToNetwork(false);
         EmulatorSettings.SetShadNetEnabled(false);
         EmulatorSettings.SetShadNetSessionDisabled(false);
