@@ -19,7 +19,7 @@ namespace VideoCore {
 
 struct TilingInfo {
     u32 bank_swizzle;
-    u32 num_slices;
+    u32 micro_tiled_mips;
     u32 num_mips;
     std::array<ImageInfo::MipInfo, 16> mips;
 };
@@ -99,10 +99,14 @@ TileManager::ScratchBuffer TileManager::GetScratchBuffer(u32 size) {
 }
 
 vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler) {
-    const u32 pl_id = u32(info.tile_mode) * NUM_BPPS + std::bit_width(info.num_bits) - 4;
-    auto& tiling_pipelines = is_tiler ? tilers : detilers;
-    if (auto pipeline = *tiling_pipelines[pl_id]; pipeline != VK_NULL_HANDLE) {
-        return pipeline;
+    const TilingKey key{
+        .tile_mode = info.tile_mode,
+        .num_bits = info.num_bits,
+        .num_samples = info.num_samples,
+        .is_tiler = is_tiler,
+    };
+    if (const auto it = tiling_pipelines.find(key); it != tiling_pipelines.end()) {
+        return *it->second;
     }
 
     const auto device = instance.GetDevice();
@@ -156,9 +160,10 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         device.createComputePipelineUnique(VK_NULL_HANDLE, compute_pipeline_ci);
     ASSERT_MSG(result == vk::Result::eSuccess, "Detiler pipeline creation failed {}",
                vk::to_string(result));
-    tiling_pipelines[pl_id] = std::move(pipeline);
+    const auto handle = *pipeline;
+    tiling_pipelines.emplace(key, std::move(pipeline));
     device.destroyShaderModule(module);
-    return *tiling_pipelines[pl_id];
+    return handle;
 }
 
 TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset,
@@ -169,7 +174,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
 
     TilingInfo params{};
     params.bank_swizzle = info.bank_swizzle;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.micro_tiled_mips = info.micro_tiled_mips;
     params.num_mips = info.resources.levels;
     for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];
@@ -254,7 +259,7 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
 
     TilingInfo params{};
     params.bank_swizzle = info.bank_swizzle;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.micro_tiled_mips = info.micro_tiled_mips;
     params.num_mips = static_cast<u32>(buffer_copies.size());
     for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];

@@ -191,7 +191,7 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
             }
         }
 
-        port->output_cv.notify_one();
+        port->output_cv.notify_all();
 
         if (stop.stop_requested()) {
             break;
@@ -199,6 +199,13 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
 
         timer.End();
     }
+
+    {
+        std::unique_lock lock{port->mutex};
+        port->closing = true;
+        port->output_ready = false;
+    }
+    port->output_cv.notify_all();
 }
 
 /*
@@ -400,10 +407,22 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
     }
 
-    // Stop the output thread
+    // Kick out any guest thread blocked in sceAudioOutOutput before joining.
+    {
+        std::unique_lock port_lock{port->mutex};
+        port->closing = true;
+        port->output_ready = false;
+    }
+    port->output_cv.notify_all();
+
+    // Stop the output thread.
     port->output_thread.Stop();
 
-    std::free(port->output_buffer);
+    {
+        std::unique_lock port_lock{port->mutex};
+        std::free(port->output_buffer);
+        port->output_buffer = nullptr;
+    }
 
     LOG_DEBUG(Lib_AudioOut, "Closed audio port {}", port_id);
     return ORBIS_OK;
@@ -556,7 +575,13 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     {
         std::unique_lock lock{port->mutex};
         const auto wait_begin = std::chrono::high_resolution_clock::now();
-        port->output_cv.wait(lock, [&] { return !port->output_ready; });
+        port->output_cv.wait(lock, [&] { return !port->output_ready || port->closing; });
+
+        if (port->closing) {
+            LOG_DEBUG(Lib_AudioOut, "Port {} closed while waiting for drain", port_id);
+            return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+        }
+
         const auto wait_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                                  std::chrono::high_resolution_clock::now() - wait_begin)
                                  .count();
@@ -666,7 +691,13 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     const auto total_begin = std::chrono::high_resolution_clock::now();
     for (u32 i = 0; i < num; i++) {
         std::unique_lock lock{ports[i]->mutex};
-        ports[i]->output_cv.wait(lock, [&] { return !ports[i]->output_ready; });
+        ports[i]->output_cv.wait(lock,
+                                [&] { return !ports[i]->output_ready || ports[i]->closing; });
+
+        if (ports[i]->closing) {
+            LOG_DEBUG(Lib_AudioOut, "Port closed while waiting for drain");
+            return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+        }
         if (param[i].ptr != nullptr) {
             std::memcpy(ports[i]->output_buffer, param[i].ptr, ports[i]->BufferSize());
             ports[i]->output_ready = true;
