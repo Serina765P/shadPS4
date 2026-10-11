@@ -1,0 +1,140 @@
+# SPDX-FileCopyrightText: 2026 Serina765P
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+name: Idolmaster Release Compatibility
+
+on:
+  push:
+    branches: [release, 'codex/idolmaster-release-*']
+    paths-ignore: ['documents/**', '**/*.md']
+  pull_request:
+    branches: [release]
+    paths-ignore: ['documents/**', '**/*.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: idolmaster-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            os: windows-2025-vs2026
+            cc: clang-cl
+            cxx: clang-cl
+          - platform: linux-x64
+            os: ubuntu-24.04
+            cc: clang-19
+            cxx: clang++-19
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Visual Studio shell
+        if: runner.os == 'Windows'
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-19 mold build-essential libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev uuid-dev glslang-tools
+
+      - name: Cache compiler outputs
+        uses: hendrikmuhs/ccache-action@v1.2.21
+        with:
+          key: idolmaster-${{ matrix.platform }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', '.gitmodules') }}
+          append-timestamp: false
+
+      - name: Check tiling shader variants
+        if: runner.os == 'Linux'
+        run: python3 .github/workflows/scripts/check-tiling-shaders.py
+
+      - name: Configure release build
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            ${{ runner.os == 'Linux' && '-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=mold -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=mold' || '' }}
+
+      - name: Build emulator
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Configure existing CPU tests
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p ~/.local/share/shadPS4
+          cmake -S . -B build-tests -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build and run existing CPU tests
+        if: runner.os == 'Linux'
+        run: |
+          cmake --build build-tests --parallel 4 --target shadps4_settings_test shadps4_ngs2_test shadps4_http_test
+          ctest --test-dir build-tests --output-on-failure -E 'GcnTest|shadps4_gcn_test'
+
+      - name: Package Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path package -Force | Out-Null
+          Copy-Item -LiteralPath build/shadPS4.exe -Destination package/shadPS4.exe
+          Copy-Item -LiteralPath LICENSE -Destination package/LICENSE
+          Set-Content -LiteralPath package/COMMIT.txt -Value '${{ github.sha }}' -Encoding utf8
+
+      - name: Package Linux executable
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p package
+          cp build/shadps4 package/
+          cp LICENSE package/
+          git rev-parse HEAD > package/COMMIT.txt
+          tar -czf shadps4-idolmaster-linux-x64.tar.gz -C package .
+
+      - name: Upload Windows build
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: shadps4-idolmaster-windows-x64-${{ github.sha }}
+          path: package/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Linux build
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: shadps4-idolmaster-linux-x64-${{ github.sha }}
+          path: shadps4-idolmaster-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload configure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: configure-diagnostics-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            build/CMakeFiles/CMakeConfigureLog.yaml
+            build-tests/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
