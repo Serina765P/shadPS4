@@ -59,7 +59,7 @@ jobs:
       - name: Cache compiler outputs
         uses: hendrikmuhs/ccache-action@v1.2.21
         with:
-          key: idolmaster-${{ matrix.platform }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', '.gitmodules') }}
+          key: idolmaster-${{ matrix.platform }}
           append-timestamp: true
 
       - name: Check tiling shader variants
@@ -88,10 +88,14 @@ jobs:
           mkdir -p ~/.local/share/shadPS4
           cmake -S . -B build-tests -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_SCAN_FOR_MODULES=OFF -DENABLE_TESTS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      - name: Build and run existing CPU tests
+      - name: Verify offline error dialog regression
+        if: runner.os == 'Linux'
+        run: python3 .github/workflows/scripts/check-error-dialog-regression.py
+
+      - name: Build and run CPU tests
         if: runner.os == 'Linux'
         run: |
-          cmake --build build-tests --parallel 4 --target shadps4_settings_test shadps4_ngs2_test shadps4_http_test
+          cmake --build build-tests --parallel 4 --target shadps4_settings_test shadps4_ngs2_test shadps4_http_test shadps4_error_dialog_test
           ctest --test-dir build-tests --output-on-failure -E 'GcnTest|shadps4_gcn_test'
 
       - name: Package Windows executable

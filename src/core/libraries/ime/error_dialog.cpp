@@ -7,8 +7,10 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
 #include "core/libraries/system/commondialog.h"
 #include "error_dialog.h"
 #include "imgui/imgui_layer.h"
@@ -114,13 +116,6 @@ public:
 static auto g_status = Status::NONE;
 static ErrorDialogUi g_dialog_ui;
 
-struct Param {
-    s32 size;
-    s32 errorCode;
-    OrbisUserServiceUserId userId;
-    s32 _reserved;
-};
-
 Error PS4_SYSV_ABI sceErrorDialogClose() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
     if (g_status != Status::RUNNING) {
@@ -154,8 +149,17 @@ Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
         return Error::ARG_NULL;
     }
     const auto err = static_cast<u32>(param->errorCode);
-    LOG_DEBUG(Lib_ErrorDialog, "called param->errorCode = {:#x}", err);
+    LOG_INFO(Lib_ErrorDialog, "called param->errorCode = {:#x}", err);
     ASSERT(param->size == sizeof(Param));
+
+    if (err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
+        !EmulatorSettings.IsConnectedToNetwork() && !EmulatorSettings.IsShadNetEnabled()) {
+        g_dialog_ui.Finish();
+        g_status = Status::FINISHED;
+        LOG_INFO(Lib_ErrorDialog, "Automatically acknowledged offline PSN sign-out dialog {:#x}",
+                 err);
+        return Error::OK;
+    }
 
     const std::string err_message = fmt::format("An error has occurred. \nCode: {:#X}", err);
     g_status = Status::RUNNING;
