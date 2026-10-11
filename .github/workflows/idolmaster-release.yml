@@ -92,6 +92,10 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 .github/workflows/scripts/check-error-dialog-regression.py
 
+      - name: Verify WordFilter context regression
+        if: runner.os == 'Linux'
+        run: python3 .github/workflows/scripts/check-word-filter-regression.py
+
       - name: Build and run CPU tests
         if: runner.os == 'Linux'
         run: |

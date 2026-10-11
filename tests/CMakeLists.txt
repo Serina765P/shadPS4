@@ -331,20 +331,26 @@ gtest_discover_tests(shadps4_http_test
 
 add_executable(shadps4_error_dialog_test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/ime/error_dialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/np/np_utility/np_utility.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/loader/symbols_resolver.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/aerolib/aerolib.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/aerolib/stubs.cpp
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
     ${CMAKE_SOURCE_DIR}/src/common/path_util.cpp
     ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
     ${CMAKE_SOURCE_DIR}/src/common/error.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/io_file.cpp
     ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
     ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
     stubs/common_stub.cpp
     stubs/core_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
-    stubs/loader_stub.cpp
     stubs/error_dialog_ui_stub.cpp
+    stubs/np_word_filter_handler_stub.cpp
     test_error_dialog.cpp
+    test_np_word_filter.cpp
 )
 target_include_directories(shadps4_error_dialog_test PRIVATE
     ${CMAKE_SOURCE_DIR}/src
