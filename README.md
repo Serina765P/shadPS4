@@ -1,237 +1,110 @@
 <!--
 SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+SPDX-FileCopyrightText: 2026 Serina765P
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
-The modifications to this fork repository primarily target the two Idolmaster series games on the PS4 platform.
-
-THE IDOLM@STER: Platinum Stars (CUSA03628, CUSA05706)
-
-THE IDOLM@STER: Stella Stage (CUSA07753, CUSA09153)
-
-Current Status:
-
-✅️Platinum Stars is playable
-
-✅️Stella Stage is playable
-
-However, prolonged gameplay may result in some random texture rendering errors, but this does not affect normal gameplay.
-
-It is recommended to configure game-specific settings for these two games within the launcher, setting the readback mode to "Precise" in the experimental features section.
-
-Note: This may not support running some other games.
-
-I must also be honest, these changes rely on Vibe Coding. After actual testing, they successfully fixed the relevant bugs in these two games.
-
-Additionally, we fixed audio stuttering and latency issues in these two games, which may help with compatibility fixes for other games.
-
-Contact me:
-
-Bilibili：https://space.bilibili.com/3461562899630581
-
-TG：https://t.me/nny_mhua
-
-<h1 align="center">
-  <br>
-  <a href="https://shadps4.net/"><img src="https://github.com/shadps4-emu/shadPS4/blob/main/.github/shadps4.png" width="220"></a>
-  <br>
-  <b>shadPS4</b>
-  <br>
-</h1>
-
-<h1 align="center">
- <a href="https://discord.gg/bFJxfftGW6">
-        <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4%20Discord&logo=Discord&logoColor=white" width="275">
- <a href="https://github.com/shadps4-emu/shadPS4/releases/latest">
-        <img src="https://img.shields.io/github/downloads/shadps4-emu/shadPS4/total.svg" width="140">
- <a href="https://shadps4.net/">
-        <img src="https://img.shields.io/badge/shadPS4-website-8A2BE2" width="150">
- <a href="https://x.com/shadps4">
-        <img src="https://img.shields.io/badge/-Join%20us-black?logo=X&logoColor=white" width="100">
- <a href="https://github.com/shadps4-emu/shadPS4/stargazers">
-        <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
-</h1>
-
-|               Bloodborne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
-| :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
-| ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
-
-|                  Yakuza 0 by SEGA                     |                 DRIVECLUB™ by Evolution Studios                    |
-| :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
-| ![Yakuza screenshot](./documents/Screenshots/3.png) | ![DRIVECLUB screenshot](./documents/Screenshots/4.png) |
-
-# General information
-
-**shadPS4** is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
-
-> [!IMPORTANT]
-> This is the emulator core, which does not include a GUI. If you just want to use the emulator as an end user, download the [**QtLauncher**](https://github.com/shadps4-emu/shadps4-qtlauncher/releases) instead.
-
-If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/wiki/I.-Quick-start-%5BUsers%5D).\
-To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-compatibility/shadps4-game-compatibility).\
-To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Discord server**](https://discord.gg/bFJxfftGW6).\
-To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).\
-You can donate to the project via our [**Kofi page**](https://ko-fi.com/shadps4).
-
-# Status
-
-> [!IMPORTANT]
-> shadPS4 is early in development, don't expect a flawless experience.
-
-Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=5sZgWyVflFM), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag), and many other games.
-
-# Why
-
-This project began for fun. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
-
-# Building
-
-## Docker
-
-For building shadPS4 in a containerized environment using Docker and VSCode, check the instructions here:  
-[**Docker Build Instructions**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-docker.md)
-
-## Windows
-
-Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
-
-## Linux
-
-Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
-
-## macOS
-
-Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
-
-> [!IMPORTANT]
-> macOS users need at least macOS 26.0 to run shadPS4. Intel Macs are not supported.
-
-# Usage examples
-
-> [!IMPORTANT]
-> For a user-friendly GUI, download the [**QtLauncher**](https://github.com/shadps4-emu/shadps4-qtlauncher/releases).
-
-To get the list of all available commands and also a more detailed description of what each command does, please refer to the `--help` flag's output.
-
-Below is a list of commonly used command patterns:
-```sh
-shadPS4 CUSA00001 # Searches for a game folder called CUSA00001 in the list of game install folders, and boots it.
-shadPS4 --fullscreen true --config-clean CUSA00001    # the game argument is always the last one,
-shadPS4 -g CUSA00001 --fullscreen true --config-clean # ...unless manually specified otherwise.
-shadPS4 /path/to/game.elf # Boots a PS4 ELF file directly. Useful if you want to boot an executable that is not named eboot.bin.
-shadPS4 CUSA00001 -- -flag1 -flag2 # Passes '-flag1' and '-flag2' to the game executable in argv.
-```
-
-# Debugging and reporting issues
-
-For more information on how to test, debug and report issues with the emulator or games, read the [**Debugging documentation**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
-
-# Keyboard and Mouse Mappings
+# shadPS4 - 《偶像大师》专供优化分支（二次修改版）
 
 > [!NOTE]
-> Some keyboards may also require you to hold the Fn key to use the F\* keys. Mac users should use the Command key instead of Control, and need to use Command+F11 for full screen to avoid conflicting with system key bindings.
+> **开发声明**：本修改分支与原 fork 分支均**完全由 AI 协同开发**（原作者基于 Vibe Coding 诊断编写，本二次修改版基于 Codex 开发完成）。
 
-| Button | Function |
-|-------------|-------------|
-F10 | FPS Counter
-Ctrl+F10 | Video Debug Info
-F11 | Fullscreen
-F12 | Trigger RenderDoc Capture (or game-only screenshot if RenderDoc is unavailable)
-Alt+F12 | Capture screenshot including HUD/dialog overlays
+本仓库是基于 PlayStation 4 模拟器 [shadPS4](https://github.com/shadps4-emu/shadPS4) 以及原 fork 作者 **水年沐华**（[Nyces / Muhua](https://github.com/Nyces)）针对《偶像大师》系列优化分支的**二次修改版本**。
 
-> [!NOTE]
-> Xbox and DualShock controllers work out of the box.
+原 shadPS4 主线 README 包含大量繁杂的开发与通用说明，作为《偶像大师》专供优化分支，本文档仅聚焦于**游戏支持现状、关键设置、两阶段修改要点及注意事项**。
 
-| Controller button | Keyboard equivalent |
-|-------------|-------------|
-LEFT AXIS UP | W |
-LEFT AXIS DOWN | S |
-LEFT AXIS LEFT | A |
-LEFT AXIS RIGHT | D |
-RIGHT AXIS UP | I |
-RIGHT AXIS DOWN | K |
-RIGHT AXIS LEFT | J |
-RIGHT AXIS RIGHT | L |
-TRIANGLE | Numpad 8 or C |
-CIRCLE | Numpad 6 or B |
-CROSS | Numpad 2 or N |
-SQUARE | Numpad 4 or V |
-PAD UP | UP |
-PAD DOWN | DOWN |
-PAD LEFT | LEFT |
-PAD RIGHT | RIGHT |
-OPTIONS | RETURN |
-BACK BUTTON / TOUCH PAD | SPACE |
-L1 | Q |
-R1 | U |
-L2 | E |
-R2 | O |
-L3 | X |
-R3 | M |
+---
 
-Keyboard and mouse inputs can be customized in the settings menu by clicking the Controller button, and further details and help on controls are  also found there. Custom bindings are saved per-game. Inputs support up to three keys per binding, mouse buttons, mouse movement mapped to joystick input, and more.
+## 🎮 支持的游戏与运行现状
 
+本版本主要针对 PS4 平台上的两款《偶像大师》正作进行专项深度适配：
 
-# Firmware files
+| 游戏名称 | 日版 ID | 繁中版 ID | 运行状态 |
+| :--- | :--- | :--- | :--- |
+| **《偶像大师 白金星光》**<br>(THE IDOLM@STER: Platinum Stars) | `CUSA03628` | `CUSA05706` | **✅ 可完美游玩 (Playable)** |
+| **《偶像大师 星光舞台》**<br>(THE IDOLM@STER: Stella Stage) | `CUSA07753` | `CUSA09153` | **✅ 可完美游玩 (Playable)** |
 
-shadPS4 can load some PlayStation 4 firmware files.
-The following firmware modules are supported and must be placed in shadPS4's `sys_modules` folder.
+> [!WARNING]
+> 本分支包含大量针对偶像大师游戏特化的图形着色器与音频管线补丁，**可能无法正常运行其他通用 PS4 游戏**。如需游玩其他游戏，建议使用 shadPS4 官方主线版本。
 
-<div align="center">
+---
 
-| Modules                        | Modules                        | Modules                        | Modules                        |
-|--------------------------------|--------------------------------|--------------------------------|--------------------------------|
-| libSceAudiodec.sprx            | libSceAudiodecCpu.sprx         | libSceAudiodecCpuDdp.sprx      | libSceAudiodecCpuDtsHdLbr.sprx |
-| libSceAudiodecCpuHevag.sprx    | libSceAudiodecCpuM4aac.sprx    | libSceCesCs.sprx               | libSceFont.sprx                |
-| libSceFontFt.sprx              | libSceFreeTypeOl.sprx          | libSceFreeTypeOptOl.sprx       | libSceFreeTypeOt.sprx          |
-| libSceJpegDec.sprx             | libSceJpegEnc.sprx             | libSceJson.sprx                | libSceJson2.sprx               |
-| libSceLibcInternal.sprx        | libSceNgs2.sprx                | libScePngEnc.sprx              | libSceRtc.sprx                 |
-| libSceRudp.sprx                | libSceSystemGesture.sprx       | libSceUlt.sprx                 | libSceWkFontConfig.sprx        |
-| libSceXml.sprx                 | libSceAt9Enc.sprx              |
-</div>
+## ⚙️ 关键使用方法与配置建议（必读）
 
-> [!Caution]
-> The above modules are required to run the games properly and must be dumped from your legally owned PlayStation 4 console.
+为了获得稳定、正常的游玩体验，请务必注意以下设置：
 
+1. **图形设置：必须开启“精确回读”（Precise Readback）**
+   - 在配套启动器（如 QtLauncher）或全局/针对游戏的图形设置中，将 **Readback mode（回读模式）** 设置为 **`Precise`（精确）**。
+   - **原因**：若未开启回读，长时间游玩或特定场景下可能会偶发模型顶点拉伸（如人物模型撕裂）或贴图错乱。
+2. **纯手柄游玩体验**
+   - 本二次修改版已彻底消除离线游玩时的阻塞弹窗，连接手柄后可全程脱离鼠标使用。
+3. **必要系统固件（sys_modules）**
+   - 模拟器正常运行依赖从正版 PS4 导出的固件模块。请将以下常见关键模块置于模拟器的 `sys_modules/` 目录下（如 `libSceAudiodec.sprx`、`libSceFont.sprx`、`libSceJob.sprx` 等）。
+4. **已知偶发问题（原作者反馈）**
+   - 特定过场播片时，可能偶发画面微小抽搐/跳帧现象（原作者已知，后续持续跟进）。
+   - 若长时间连续游玩偶发轻微材质渲染瑕疵，通常不影响游戏主流程与正常存档。
 
+---
 
-# Main team
+## 🛠️ 修改内容与优化汇总
 
-- [**georgemoralis**](https://github.com/georgemoralis)
-- [**psucien**](https://github.com/psucien)
-- [**viniciuslrangel**](https://github.com/viniciuslrangel)
-- [**roamic**](https://github.com/roamic)
-- [**squidbus**](https://github.com/squidbus)
-- [**frodo**](https://github.com/baggins183)
-- [**Stephen Miller**](https://github.com/StevenMiller123)
-- [**kalaposfos13**](https://github.com/kalaposfos13)
+### 一、 本分支（二次修改版）新增改动
 
-Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
+针对原 fork 在手柄游玩体验上的痛点，以及同步最新模拟器核心，进行了如下二次修改：
 
-<a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=24">
-</a>
+1. **静默/自动确认离线 PSN 错误弹窗**
+   - 彻底解决了手柄游玩时频繁弹出 PSN 离线/登出提示、手柄无法关闭必须伸手拿鼠标去点确认的体验问题。
+   - 在未配置 ShadNet 账户或离线状态下，模拟器将自动确认并静默跳过该网络警告；若配置了有效 ShadNet 账号，仍保留正常的登出提示流程。
+2. **自动确认奖杯参数错误弹窗**
+   - 当本地未注册或未挂载对应的奖杯数据时，自动确认相关参数告警，不再打断游戏主进程与手柄操作。
+3. **同步并 Backport shadPS4 主线核心修复**
+   - 同步了主线大量关键提交：
+     - 扩大 Readback 故障处理窗口（#4839）
+     - 修复纹理缓存镜像校验（#5110）
+     - 释放嵌套间接缓冲任务帧内存（#5258）
+     - 原始缓冲写入后正确失效缓存图像（#5092）
+     - 恢复 Windows 内存映射区域分割后的保护属性（#5317）
+     - 修复停止模拟时的线程死锁（#4859）
+     - 重构数组模式下的 Mip 属性计算（#5001）与平铺纹理布局（#5196）
+     - 覆盖呈现等待与片元纹理读取（#5231）
+4. **底层管线与音频细节适配**
+   - 补全 96-bit 瓦片着色管线、多采样实例校验适配；
+   - 引入 WordFilter 句柄初始化逻辑以替换原有的零存根；
+   - 调整 AudioOut 端口关闭等待逻辑，提升整体稳定性。
+5. **完善 CI / GitHub Actions 自动构建**
+   - 构建流水线全面升级，支持 Windows x64 与 Linux x64 自动编译、回归测试与产物打包。
 
-# Contributing
+---
 
-If you want to contribute, please read the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
-Open a PR and we'll check it :)
+### 二、 原 Fork（水年沐华分支）的核心修复（继承保留）
 
+原 fork 作者针对游戏长期存在的渲染与音频痛点，进行了多项关键攻坚：
 
-# Special Thanks
+1. **模型顶点拉伸与 GPU 缓冲同步修复**
+   - 重写 GS Copy Shader 解析机制，支持通用常量读取与多种标量操作码。
+   - 增加 GS Copy 数据回退映射机制（Fallback GsCopyData），防止着色器解析失败导致崩溃。
+   - 完善 GPU 缓冲修改追踪与页面对齐，补全 SSBO 读写内存屏障，从根本上缓解了角色顶点拉伸撕裂。
+2. **音频卡顿、延迟与 S4U Live 动作冻结修复**
+   - **AJM 批处理优化**：引入滑动保留窗口与批处理状态维护，解决槽位耗尽静音；修正 AT9 多帧解码边界，杜绝 S4U Live 舞蹈卡死。
+   - **SDL AudioOut 锁优化**：移除内部持有端口锁时的 Sleep，改为按端口细粒度加锁，消除音频卡顿与主线程阻塞。
+   - **线程优先级提升**：将 AJM 解码与音频输出线程优先级提升至 VeryHigh，高负载下仍能保持约 21ms 的稳定音频节奏。
+3. **Vulkan 编译与调度调优**
+   - 针对部分着色器禁用死锁优化，主信号量引入超时刷新机制，提高稳定性。
 
-A few noteworthy teams/projects who've helped us along the way are:
+---
 
-- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat. They have been incredibly helpful in understanding and solving problems that came up from natively executing the x64 code of PS4 binaries
+## 🚀 下载与使用
 
-- [**fpPS4**](https://github.com/red-prig/fpPS4): The fpPS4 team has assisted massively with understanding some of the more complex parts of the PS4 operating system and libraries, by helping with reverse engineering work and research.
+请前往本仓库的 [Releases 页面](https://github.com/Serina765P/shadPS4/releases) 下载最新的 Pre-release 构建版本：
 
-- **yuzu**: Our shader compiler has been designed with yuzu's Hades compiler as a blueprint. This allowed us to focus on the challenges of emulating a modern AMD GPU while having a high-quality optimizing shader compiler implementation as a base.
+- **Windows 用户**：下载 `shadps4-idolmaster-windows-x64-*.zip`，解压后搭配 [QtLauncher](https://github.com/shadps4-emu/shadps4-qtlauncher/releases) 启动，或直接运行 `shadPS4.exe` 引导游戏。
+- **Linux 用户**：下载 `shadps4-idolmaster-linux-x64-*.tar.gz` 解压使用。
 
-- [**felix86**](https://github.com/OFFTKP/felix86): A new x86-64 → RISC-V Linux userspace emulator
+---
 
-- [**emudev.org**](https://emudev.org/): A network of people interested in the documentation, emulation, simulation and re-implementation of hardware near extinction . Belongs to my friend skmp and me (shadow) also a member of it
+## 🤝 致谢与原作者联系方式
 
-# License
-
-- [**GPL-2.0 license**](https://github.com/shadps4-emu/shadPS4/blob/main/LICENSE)
+- 感谢 [shadPS4](https://github.com/shadps4-emu/shadPS4) 官方团队及全体开源贡献者。
+- 感谢原 fork 作者 **水年沐华**（Nyces）前期的反复测试、日志诊断与代码贡献！
+  - Bilibili：[https://space.bilibili.com/3461562899630581](https://space.bilibili.com/3461562899630581)
+  - Telegram：[https://t.me/nny_mhua](https://t.me/nny_mhua)

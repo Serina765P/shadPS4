@@ -421,3 +421,12 @@ cmake-build-*
 
 # Nix Result symlink
 result
+
+# AI Agent memories and local scratch files
+.gemini/
+.codex/
+.claude/
+.cursor/
+AGENTS.md
+CLAUDE.md
+*.memory.md
