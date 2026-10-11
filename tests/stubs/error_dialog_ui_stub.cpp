@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <imgui.h>
 #include "imgui/imgui_layer.h"
 
 namespace {
@@ -33,10 +34,27 @@ std::size_t ActiveErrorDialogLayers() {
 }
 
 void DrawErrorDialogLayers() {
+    auto* previous_context = ImGui::GetCurrentContext();
+    if (!previous_context) {
+        ImGui::CreateContext();
+        auto& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2{1280.0f, 720.0f};
+        io.DeltaTime = 1.0f / 60.0f;
+        io.IniFilename = nullptr;
+        unsigned char* pixels = nullptr;
+        int width = 0;
+        int height = 0;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    }
+    ImGui::NewFrame();
     const auto active_layers = layers;
     for (auto* layer : active_layers) {
         if (layer) {
             layer->Draw();
         }
+    }
+    ImGui::EndFrame();
+    if (!previous_context) {
+        ImGui::DestroyContext();
     }
 }

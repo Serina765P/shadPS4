@@ -642,6 +642,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_types2.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
+            src/core/libraries/np/trophy_data_state.h
             src/core/libraries/np/np_tus.cpp
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/np_utility/np_utility.cpp

@@ -12,6 +12,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/trophy_data_state.h"
 #include "core/libraries/system/commondialog.h"
 #include "error_dialog.h"
 #include "imgui/imgui_layer.h"
@@ -27,6 +28,7 @@ using CommonDialog::Status;
 
 static std::atomic_bool g_auto_acknowledge{false};
 static std::atomic_bool g_running_status_observed{false};
+static std::atomic<u32> g_auto_acknowledge_code{0};
 
 class ErrorDialogUi final : public ImGui::Layer {
     bool first_render{false};
@@ -80,8 +82,8 @@ public:
             if (g_running_status_observed.load()) {
                 Finish();
                 LOG_INFO(Lib_ErrorDialog,
-                         "Automatically acknowledged offline PSN sign-out dialog 0x80550006 "
-                         "after RUNNING was observed");
+                         "Automatically acknowledged dialog {:#x} after RUNNING was observed",
+                         g_auto_acknowledge_code.load());
             }
             return;
         }
@@ -135,7 +137,8 @@ static Status GetDialogStatus() {
     const auto status = g_status.load();
     if (status == Status::RUNNING && g_auto_acknowledge.load() &&
         !g_running_status_observed.exchange(true)) {
-        LOG_INFO(Lib_ErrorDialog, "Offline PSN sign-out dialog RUNNING observed by guest");
+        LOG_INFO(Lib_ErrorDialog, "Dialog {:#x} RUNNING observed by guest",
+                 g_auto_acknowledge_code.load());
     }
     // Return the snapshot so a concurrent UI acknowledgement cannot hide RUNNING from this query.
     return status;
@@ -178,17 +181,23 @@ Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
         return Error::ARG_NULL;
     }
     const auto err = static_cast<u32>(param->errorCode);
-    LOG_INFO(Lib_ErrorDialog, "called param->errorCode = {:#x}", err);
+    LOG_INFO(Lib_ErrorDialog, "called param->errorCode = {:#x}, userId = {}", err, param->userId);
     ASSERT(param->size == sizeof(Param));
 
-    const bool auto_acknowledge = err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
-                                  !EmulatorSettings.IsConnectedToNetwork() &&
-                                  !EmulatorSettings.IsShadNetEnabledSetting();
+    const bool offline_signed_out = err == static_cast<u32>(ORBIS_NP_ERROR_SIGNED_OUT) &&
+                                    !EmulatorSettings.IsConnectedToNetwork() &&
+                                    !EmulatorSettings.IsShadNetEnabledSetting();
+    const bool unavailable_trophy =
+        err == static_cast<u32>(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT) &&
+        Libraries::Np::NpTrophy::trophy_data_state.UserHasUnavailableDefinitions(param->userId);
+    const bool auto_acknowledge = offline_signed_out || unavailable_trophy;
     g_running_status_observed.store(false);
+    g_auto_acknowledge_code.store(err);
     g_auto_acknowledge.store(auto_acknowledge);
     if (auto_acknowledge) {
-        LOG_INFO(Lib_ErrorDialog, "Queued offline PSN sign-out dialog {:#x} for UI acknowledgement",
-                 err);
+        LOG_INFO(Lib_ErrorDialog, "Queued dialog {:#x} for UI acknowledgement: {}", err,
+                 unavailable_trophy ? "registered trophy definitions unavailable"
+                                    : "offline PSN sign-out");
     }
 
     const std::string err_message = fmt::format("An error has occurred. \nCode: {:#X}", err);

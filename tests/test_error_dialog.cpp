@@ -6,6 +6,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/trophy_data_state.h"
 
 std::size_t ActiveErrorDialogLayers();
 void DrawErrorDialogLayers();
@@ -23,6 +24,9 @@ protected:
             logging_ready = true;
         }
         sceErrorDialogTerminate();
+        for (u32 slot = 0; slot < Libraries::Np::NpTrophy::TrophyDataState::MaxContexts; ++slot) {
+            Libraries::Np::NpTrophy::trophy_data_state.Clear(slot);
+        }
         EmulatorSettings.SetConfigMode(ConfigMode::Global);
         EmulatorSettings.SetConnectedToNetwork(false);
         EmulatorSettings.SetShadNetEnabled(false);
@@ -39,6 +43,92 @@ protected:
         return {static_cast<s32>(sizeof(Param)), static_cast<s32>(code), 1, 0};
     }
 };
+
+TEST_F(ErrorDialogTest, MissingTrophyDefinitionsAreAcknowledgedAfterRunning) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, false);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    DrawErrorDialogLayers();
+    ASSERT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::FINISHED);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 0u);
+}
+
+TEST_F(ErrorDialogTest, CompleteTrophyDefinitionsKeepArgumentErrorsVisible) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, true);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, UnregisteredTrophyErrorsKeepTheirOriginalDialog) {
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, AnotherUsersMissingTrophiesDoNotDismissTheDialog) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 2, false);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, OneAvailableContextPreventsTrophyErrorAcknowledgement) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, false);
+    Libraries::Np::NpTrophy::trophy_data_state.Register(1, 1, true);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, UnspecifiedUserRequiresAllRegisteredTrophiesToBeUnavailable) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, false);
+    auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    param.userId = -1;
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    ASSERT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    ASSERT_EQ(sceErrorDialogGetStatus(), Status::FINISHED);
+    Libraries::Np::NpTrophy::trophy_data_state.Register(1, 2, true);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, DestroyedTrophyContextDoesNotDismissArgumentErrors) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, false);
+    Libraries::Np::NpTrophy::trophy_data_state.Clear(0);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
+
+TEST_F(ErrorDialogTest, OtherTrophyErrorsAreNotAcknowledgedForMissingDefinitions) {
+    Libraries::Np::NpTrophy::trophy_data_state.Register(0, 1, false);
+    const auto param = MakeParam(ORBIS_NP_TROPHY_ERROR_INVALID_TROPHY_ID);
+    ASSERT_EQ(sceErrorDialogOpen(&param), Error::OK);
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    DrawErrorDialogLayers();
+    EXPECT_EQ(sceErrorDialogGetStatus(), Status::RUNNING);
+    EXPECT_EQ(ActiveErrorDialogLayers(), 1u);
+}
 
 TEST_F(ErrorDialogTest, OfflineSignedOutIsAutomaticallyAcknowledged) {
     const auto param = MakeParam(ORBIS_NP_ERROR_SIGNED_OUT);
