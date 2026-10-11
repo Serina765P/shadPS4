@@ -328,3 +328,54 @@ gtest_discover_tests(shadps4_http_test
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DISCOVERY_TIMEOUT 60
 )
+
+add_executable(shadps4_error_dialog_test
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/ime/error_dialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/path_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/error.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
+    stubs/common_stub.cpp
+    stubs/core_stub.cpp
+    stubs/scm_rev_stub.cpp
+    stubs/sdl_stub.cpp
+    stubs/loader_stub.cpp
+    stubs/error_dialog_ui_stub.cpp
+    test_error_dialog.cpp
+)
+target_include_directories(shadps4_error_dialog_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}
+)
+target_compile_features(shadps4_error_dialog_test PRIVATE cxx_std_23)
+target_compile_definitions(shadps4_error_dialog_test PRIVATE
+    BOOST_ASIO_STANDALONE
+    IMGUI_USER_CONFIG="imgui/imgui_config.h"
+)
+target_compile_definitions(Dear_ImGui PRIVATE
+    IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h"
+)
+target_link_libraries(shadps4_error_dialog_test PRIVATE
+    GTest::gtest_main
+    fmt::fmt
+    magic_enum::magic_enum
+    nlohmann_json::nlohmann_json
+    toml11::toml11
+    SDL3::SDL3
+    spdlog::spdlog
+    Dear_ImGui
+)
+if (WIN32)
+    target_link_libraries(shadps4_error_dialog_test PRIVATE onecore)
+    target_compile_definitions(shadps4_error_dialog_test PRIVATE
+        NOMINMAX WIN32_LEAN_AND_MEAN NTDDI_VERSION=0x0A000006
+        _WIN32_WINNT=0x0A00 WINVER=0x0A00
+    )
+endif()
+gtest_discover_tests(shadps4_error_dialog_test
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DISCOVERY_TIMEOUT 60
+)

@@ -52,6 +52,18 @@ SPIR-V generation; it does not verify rendered pixels or hardware timing.
 
 ## Game validation
 
+The core automatically acknowledges error dialog `0x80550006`
+(`ORBIS_NP_ERROR_SIGNED_OUT`) when both network connectivity and ShadNet are
+disabled. It finishes the dialog as clicking OK would, while logging the code
+at Info level. NP authentication results remain unchanged. Other error codes,
+including saved-data errors, and sign-out dialogs with networking or ShadNet
+enabled continue to require confirmation.
+
+CI exercises the real error-dialog APIs with a headless layer registry. It
+first reproduces the waiting dialog using the preceding release implementation,
+then verifies automatic completion, repeated notifications, preserved online
+dialogs, unrelated errors and parameter validation with the updated code.
+
 Keep readback mode at **Precise**, matching the original fork recommendation.
 Actual compatibility remains unverified until both games are played with
 these artifacts. Compare against the original release using the same game
