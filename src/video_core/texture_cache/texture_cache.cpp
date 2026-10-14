@@ -640,7 +640,8 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;
-    UpdateImage(image_id);
+    // Removed UpdateImage - render targets are GPU-written, don't need CPU upload.
+    // This avoids EndRendering() calls that break render passes.
 
     // Register meta data for this color buffer
     if (desc.info.meta_info.cmask_addr) {
@@ -662,7 +663,8 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
-    UpdateImage(image_id);
+    // Removed UpdateImage - depth targets are GPU-written, don't need CPU upload.
+    // This avoids EndRendering() calls that break render passes.
 
     // Register meta data for this depth buffer
     if (desc.info.meta_info.htile_addr) {

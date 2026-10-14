@@ -74,6 +74,34 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
         device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
 }
 
+void BufferCache::InvalidateMemoryAsync(VAddr device_addr, u64 size) {
+    if (!IsRegionRegistered(device_addr, size)) {
+        return;
+    }
+    memory_tracker->InvalidateRegion(
+        device_addr, size, [this, device_addr, size] { ReadMemoryAsync(device_addr, size, true); });
+}
+
+void BufferCache::ReadMemoryAsync(VAddr device_addr, u64 size, bool is_write) {
+    liverpool->SendCommand<true>([this, device_addr, size, is_write] {
+        Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
+        // GPU-modified ranges come as many small scattered islands, so the download
+        // is widened to a window around the request
+        constexpr u64 WindowSize = 512_KB;
+        const VAddr buf_start = buffer.CpuAddr();
+        const VAddr buf_end = buf_start + buffer.SizeBytes();
+        const VAddr window_start =
+            std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), buf_start);
+        const VAddr window_end = std::min<VAddr>(
+            std::max<VAddr>(window_start + WindowSize, device_addr + size), buf_end);
+        // Use async download to avoid blocking on GPU completion
+        DownloadBufferMemory<true>(buffer, window_start, window_end - window_start);
+        if (is_write) {
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        }
+    });
+}
+
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
