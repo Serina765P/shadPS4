@@ -847,7 +847,9 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
             image = &texture_cache.GetImage(image_id);
         }
-        texture_cache.UpdateImage(image_id);
+        // Skip UpdateImage for render targets - they are GPU-written and don't need CPU->GPU upload.
+        // UpdateImage can trigger RefreshImage which calls EndRendering(), breaking render passes.
+        // Input textures are updated separately when bound as shader resources.
         image->SetBackingSamples(key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         const auto slice = image_view.info.range.base.layer;
