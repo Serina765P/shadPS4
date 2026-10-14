@@ -650,8 +650,10 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
     const auto width = Common::AlignUp<u32>(frame.width, 16);
     const auto pitch = Common::AlignUp<u32>(frame.width, 64);
     const auto height = Common::AlignUp<u32>(frame.height, 16);
-    Core::Memory::Instance()->InvalidateMemory(reinterpret_cast<VAddr>(p_buffer),
-                                               (width * height * 3) / 2);
+    // Use async invalidation to avoid blocking on GPU completion.
+    // Video frames are CPU-written, so we don't need to wait for GPU readback.
+    Core::Memory::Instance()->InvalidateMemoryAsync(reinterpret_cast<VAddr>(p_buffer),
+                                                    (width * height * 3) / 2);
 
     return Frame{
         .buffer = std::move(buffer),

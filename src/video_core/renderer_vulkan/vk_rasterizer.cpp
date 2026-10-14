@@ -1052,6 +1052,16 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
     return true;
 }
 
+bool Rasterizer::InvalidateMemoryAsync(VAddr addr, u64 size) {
+    if (!IsMapped(addr, size)) {
+        // Not GPU mapped memory, can skip invalidation logic entirely.
+        return false;
+    }
+    buffer_cache.InvalidateMemoryAsync(addr, size);
+    texture_cache.InvalidateMemory(addr, size);
+    return true;
+}
+
 bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
     if (!IsMapped(addr, size)) {
         // Not GPU mapped memory, can skip invalidation logic entirely.

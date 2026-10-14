@@ -106,6 +106,10 @@ public:
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
+    /// Invalidates any buffer in the logical page range (async version for AvPlayer).
+    /// Does not wait for GPU completion, suitable for CPU-written buffers.
+    void InvalidateMemoryAsync(VAddr device_addr, u64 size);
+
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
     void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
 
@@ -169,9 +173,10 @@ private:
         return !buffer_id || slot_buffers[buffer_id].is_deleted;
     }
 
+    void ReadMemoryAsync(VAddr device_addr, u64 size, bool is_write = false);
+
     template <bool async>
     void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
-
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
     void JoinOverlap(BufferId new_buffer_id, BufferId overlap_id, bool accumulate_stream_score);

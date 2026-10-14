@@ -289,6 +289,7 @@ public:
     s32 GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
+    void InvalidateMemoryAsync(VAddr addr, u64 size) const;
 
 private:
     VMAHandle FindVMA(VAddr target) {
